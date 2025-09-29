@@ -9,6 +9,7 @@ export 'src/entity/baidu_file_meta.dart';
 export 'src/entity/category_item.dart';
 export 'src/entity/count.dart';
 export 'src/entity/file_all_list.dart';
+export 'src/entity/file_detail_info_list.dart';
 export 'src/entity/file_list.dart';
 export 'src/entity/file_type_list.dart';
 export 'src/entity/search_item.dart';

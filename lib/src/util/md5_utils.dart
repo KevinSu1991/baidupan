@@ -10,13 +10,11 @@ class Md5Utils {
 
   static Md5FileConverter md5Converter = md5FileUseBytes;
 
-  static Future<String> getFileMd5(String filePath,
-      [int blockSize = 1024 * 1024]) async {
+  static Future<String> getFileMd5(String filePath, [int blockSize = 1024 * 1024]) async {
     return md5Converter(filePath);
   }
 
-  static Future<String> md5FileUseBytes(String filePath,
-      [int blockSize = 1024 * 1024]) async {
+  static Future<String> md5FileUseBytes(String filePath, [int blockSize = 1024 * 1024]) async {
     final file = File(filePath);
     return (await md5.bind(file.openRead()).first).toString();
   }
@@ -30,10 +28,7 @@ class Md5Utils {
     return output.split(' ').first;
   }
 
-  static List<String> getBlockList(
-    String filePath, [
-    int blockSize = 4 * 1024 * 1024,
-  ]) {
+  static List<String> getBlockList(String filePath, [int blockSize = 4 * 1024 * 1024]) {
     final file = File(filePath);
     final accessFile = file.openSync(mode: FileMode.read);
     final result = <String>[];
@@ -74,10 +69,7 @@ class BaiduMd5 {
   final String filePath;
   final int memberLevel;
 
-  BaiduMd5({
-    required this.filePath,
-    required this.memberLevel,
-  });
+  BaiduMd5({required this.filePath, required this.memberLevel});
 
   String? _contentMd5;
 
@@ -101,38 +93,25 @@ class BaiduMd5 {
     }
 
     final blockSize = PanUtils.getBlockSize(memberLevel);
-    _blockMd5List ??= Md5Utils.getBlockList(
-      filePath,
-      blockSize,
-    );
+    _blockMd5List ??= Md5Utils.getBlockList(filePath, blockSize);
 
     return _blockMd5List!;
   }
 
   Map<String, dynamic> toMap() {
-    return {
-      'filePath': filePath,
-      'memberLevel': memberLevel,
-      'blockMd5List': blockMd5List,
-      'contentMd5': contentMd5,
-      'sliceMd5': sliceMd5,
-    };
+    return {'filePath': filePath, 'memberLevel': memberLevel, 'blockMd5List': blockMd5List, 'contentMd5': contentMd5, 'sliceMd5': sliceMd5};
   }
 
   factory BaiduMd5.fromMap(Map<String, dynamic> map) {
-    final instance = BaiduMd5(
-      filePath: map['filePath'],
-      memberLevel: map['memberLevel'],
-    );
-    instance._blockMd5List =
-        (map['blockMd5List'] as List).whereType<String>().toList();
+    final instance = BaiduMd5(filePath: map['filePath'], memberLevel: map['memberLevel']);
+    instance._blockMd5List = (map['blockMd5List'] as List).whereType<String>().toList();
     instance._contentMd5 = map['contentMd5'];
     instance._sliceMd5 = map['sliceMd5'];
     return instance;
   }
 }
 
-class _DigestSink extends Sink<Digest> {
+class _DigestSink implements Sink<Digest> {
   /// The value added to the sink.
   ///
   /// A value must have been added using [add] before reading the `value`.

@@ -1,15 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:baidupan/baidupan.dart';
+import 'package:baidupan/src/entity/file_detail_info_list.dart';
 import 'package:http/http.dart' as http;
 
-import 'package:baidupan/baidupan.dart';
-
-part 'manager.g.dart';
-
-part 'upload.g.dart';
-
 part 'download.g.dart';
+part 'manager.g.dart';
+part 'upload.g.dart';
 
 String get _baseUrl => 'https://pan.baidu.com';
 
@@ -47,11 +45,7 @@ mixin BaiduPanMixin {
     return headers.entries.map((e) => '${e.key}: ${e.value}').join('\n');
   }
 
-  Future<Map<String, dynamic>> _get(
-    String path, {
-    Map<String, String> params = const {},
-    Map<String, String> headers = const {},
-  }) async {
+  Future<Map<String, dynamic>> _get(String path, {Map<String, dynamic> params = const {}, Map<String, String> headers = const {}}) async {
     final response = await _getResponse(path, params: params, headers: headers);
     final map = json.decode(response.body);
 
@@ -68,15 +62,8 @@ mixin BaiduPanMixin {
     return map;
   }
 
-  Future<http.Response> _getResponse(
-    String path, {
-    Map<String, String> params = const {},
-    Map<String, String> headers = const {},
-  }) async {
-    final uri = Uri.parse('$_baseUrl/$path').replace(queryParameters: {
-      ...params,
-      'access_token': accessToken,
-    });
+  Future<http.Response> _getResponse(String path, {Map<String, dynamic> params = const {}, Map<String, String> headers = const {}}) async {
+    final uri = Uri.parse('$_baseUrl/$path').replace(queryParameters: {...params, 'access_token': accessToken});
 
     return http.get(uri, headers: headers);
   }
@@ -84,30 +71,16 @@ mixin BaiduPanMixin {
   Future<Map> _post({
     String path = 'rest/2.0/xpan/file',
     String method = 'filemanager',
-    Map<String, String> params = const {},
+    Map<String, dynamic> params = const {},
     Map<String, String> bodyParams = const {},
   }) async {
-    final uri = Uri.parse('$_baseUrl/$path').replace(queryParameters: {
-      ...params,
-      'access_token': accessToken,
-      'method': method,
-    });
+    final uri = Uri.parse('$_baseUrl/$path').replace(queryParameters: {...params, 'access_token': accessToken, 'method': method});
 
-    final bodyMap = {
-      ...bodyParams,
-      'async': 0,
-    };
+    final bodyMap = {...bodyParams, 'async': 0};
 
     final body = bodyMap.entries.map((e) => '${e.key}=${e.value}').join('&');
 
-    final response = await http.post(
-      uri,
-      body: body,
-      encoding: utf8,
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-    );
+    final response = await http.post(uri, body: body, encoding: utf8, headers: {'Content-Type': 'application/x-www-form-urlencoded'});
     var responseBody = response.body;
     final map = json.decode(responseBody);
 
@@ -137,11 +110,7 @@ mixin BaiduPanMixin {
 ///
 /// 官方文档 https://pan.baidu.com/union/doc/pksg0s9ns
 class BaiduPan with BaiduPanMixin {
-  const BaiduPan(
-    this.accessToken, {
-    this.showLog = false,
-    this.secretAccessToken = false,
-  });
+  const BaiduPan(this.accessToken, {this.showLog = false, this.secretAccessToken = false});
 
   factory BaiduPan.withAuth(BaiduAuth auth, {bool showLog = false}) {
     return BaiduPan(auth.accessToken, showLog: showLog);
@@ -168,10 +137,7 @@ class BaiduPan with BaiduPanMixin {
   ///
   /// 官方文档: https://pan.baidu.com/union/doc/Cksg0s9ic
   Future<DiskSpace> getDiskSpace() async {
-    final map = await _get('api/quota', params: {
-      'checkfree': '1',
-      'checkexpire': '1',
-    });
+    final map = await _get('api/quota', params: {'checkfree': '1', 'checkexpire': '1'});
     return DiskSpace.fromJson(map);
   }
 
@@ -222,23 +188,13 @@ class BaiduPan with BaiduPanMixin {
   }) async {
     final params = <String, String>{...otherParams};
 
-    _addCommonParams(
-      params: params,
-      order: order,
-      desc: desc,
-      start: start,
-      end: end,
-      limit: limit,
-    );
+    _addCommonParams(params: params, order: order, desc: desc, start: start, end: end, limit: limit);
 
     if (dir != null) {
       params['dir'] = dir;
     }
 
-    final map = await _get('rest/2.0/xpan/file', params: {
-      'method': 'list',
-      ...params,
-    });
+    final map = await _get('rest/2.0/xpan/file', params: {'method': 'list', ...params});
     return FileList.fromJson(map);
   }
 
@@ -256,30 +212,15 @@ class BaiduPan with BaiduPanMixin {
     bool web = true,
     Map<String, String> otherParams = const {},
   }) async {
-    final params = <String, String>{
-      'path': dir,
-      'limit': limit.toString(),
-      ...otherParams,
-    };
+    final params = <String, String>{'path': dir, 'limit': limit.toString(), ...otherParams};
 
     if (recursion) {
       params['recursion'] = '1';
     }
 
-    _addCommonParams(
-      params: params,
-      order: order,
-      desc: desc,
-      start: start,
-      end: end,
-      limit: limit,
-      web: web,
-    );
+    _addCommonParams(params: params, order: order, desc: desc, start: start, end: end, limit: limit, web: web);
 
-    final map = await _get('rest/2.0/xpan/multimedia', params: {
-      'method': 'listall',
-      ...params,
-    });
+    final map = await _get('rest/2.0/xpan/multimedia', params: {'method': 'listall', ...params});
 
     return FileAllList.fromJson(map);
   }
@@ -298,10 +239,7 @@ class BaiduPan with BaiduPanMixin {
   }) async {
     final path = '/rest/2.0/xpan/file';
 
-    var param = <String, String>{
-      'method': 'doclist',
-      'parent_path': dir,
-    };
+    var param = <String, String>{'method': 'doclist', 'parent_path': dir};
 
     if (recursion) {
       param['recursion'] = '1';
@@ -329,10 +267,7 @@ class BaiduPan with BaiduPanMixin {
   }) async {
     final path = 'rest/2.0/xpan/file';
 
-    var param = <String, String>{
-      'method': 'imagelist',
-      'parent_path': dir,
-    };
+    var param = <String, String>{'method': 'imagelist', 'parent_path': dir};
 
     if (recursion) {
       param['recursion'] = '1';
@@ -360,10 +295,7 @@ class BaiduPan with BaiduPanMixin {
   }) async {
     final path = 'rest/2.0/xpan/file';
 
-    var param = <String, String>{
-      'method': 'videolist',
-      'parent_path': dir,
-    };
+    var param = <String, String>{'method': 'videolist', 'parent_path': dir};
 
     if (recursion) {
       param['recursion'] = '1';
@@ -391,10 +323,7 @@ class BaiduPan with BaiduPanMixin {
   }) async {
     final path = 'rest/2.0/xpan/file';
 
-    var param = <String, String>{
-      'method': 'btlist',
-      'parent_path': dir,
-    };
+    var param = <String, String>{'method': 'btlist', 'parent_path': dir};
 
     if (recursion) {
       param['recursion'] = '1';
@@ -411,14 +340,9 @@ class BaiduPan with BaiduPanMixin {
   /// 获取分类文件总个数
   ///
   /// 参数查看 [官方文档](https://pan.baidu.com/union/doc/dksg0sanx)
-  Future<Map<BaiduCategory, CategoryCount>> getCountOfPathByType({
-    String dir = '/',
-    bool recursion = true,
-  }) async {
+  Future<Map<BaiduCategory, CategoryCount>> getCountOfPathByType({String dir = '/', bool recursion = true}) async {
     final path = 'api/categoryinfo';
-    final param = <String, String>{
-      'parent_path': dir,
-    };
+    final param = <String, String>{'parent_path': dir};
 
     param.putIfNotNull('recursion', recursion ? '1' : '0');
 
@@ -460,10 +384,7 @@ class BaiduPan with BaiduPanMixin {
 
     final path = 'rest/2.0/xpan/multimedia';
 
-    var param = <String, String>{
-      'method': 'categorylist',
-      'parent_path': parentPath,
-    };
+    var param = <String, String>{'method': 'categorylist', 'parent_path': parentPath};
 
     if (recursion) {
       param['recursion'] = '1';
@@ -488,19 +409,10 @@ class BaiduPan with BaiduPanMixin {
   /// 搜索文件
   ///
   /// 参数查看 [官方文档](https://pan.baidu.com/union/doc/zksg0sb9z)
-  Future<SearchList> search({
-    required String key,
-    String dir = '/',
-    int page = 1,
-    bool recursion = false,
-  }) async {
+  Future<SearchList> search({required String key, String dir = '/', int page = 1, bool recursion = false}) async {
     final path = 'rest/2.0/xpan/file';
 
-    var param = <String, String>{
-      'method': 'search',
-      'key': key,
-      'dir': dir,
-    };
+    var param = <String, String>{'method': 'search', 'key': key, 'dir': dir};
 
     if (recursion) {
       param['recursion'] = '1';
@@ -520,28 +432,13 @@ class BaiduPan with BaiduPanMixin {
   /// [type] 为音视频流的类型，查看[BaiduMediaRequestType]。
   ///
   /// 具体参数说明查看 [官方文档](https://pan.baidu.com/union/doc/ll1hhaox3)
-  Future<http.Response> getMediaStreamResponse({
-    required String filePath,
-    BaiduMediaRequestType type = BaiduMediaRequestType.M3U8_AUTO_1080,
-  }) async {
+  Future<http.Response> getMediaStreamResponse({required String filePath, BaiduMediaRequestType type = BaiduMediaRequestType.M3U8_AUTO_1080}) async {
     final path = 'rest/2.0/xpan/file';
-    final param = <String, String>{
-      'method': 'streaming',
-      'path': filePath,
-      'access_token': accessToken,
-      'type': type.value,
-    };
+    final param = <String, String>{'method': 'streaming', 'path': filePath, 'access_token': accessToken, 'type': type.value};
 
-    final header = <String, String>{
-      'User-Agent': 'xpanvideo;netdisk;iPhone13;ios-iphone;15.1;ts',
-      'host': 'pan.baidu.com',
-    };
+    final header = <String, String>{'User-Agent': 'xpanvideo;netdisk;iPhone13;ios-iphone;15.1;ts', 'host': 'pan.baidu.com'};
 
-    return _getResponse(
-      path,
-      params: param,
-      headers: header,
-    );
+    return _getResponse(path, params: param, headers: header);
   }
 
   /// 获取音视频流的 [Uri]。
@@ -552,21 +449,27 @@ class BaiduPan with BaiduPanMixin {
   /// 如果是用于服务器使用，建议使用 [getMediaStreamResponse] 方法获取音视频流的文本内容. 然后储存到文件中，然后提供给用户脱敏的 Uri.
   ///
   /// 另，需要将 m3u8 文件的响应头请将响应头的 ContentType 设置为 `application/x-mpegURL`.
-  Uri getMediaStreamUri({
-    required String filePath,
-    BaiduMediaRequestType type = BaiduMediaRequestType.M3U8_AUTO_1080,
-  }) {
+  Uri getMediaStreamUri({required String filePath, BaiduMediaRequestType type = BaiduMediaRequestType.M3U8_AUTO_1080}) {
     return Uri(
       scheme: 'https',
       host: 'pan.baidu.com',
       path: 'rest/2.0/xpan/file',
-      queryParameters: <String, String>{
-        'method': 'streaming',
-        'path': filePath,
-        'access_token': accessToken,
-        'type': type.value,
-      },
+      queryParameters: <String, String>{'method': 'streaming', 'path': filePath, 'access_token': accessToken, 'type': type.value},
     );
+  }
+
+  /// 查询文件详细列表
+  ///
+  /// 参数查看 [官方文档](https://pan.baidu.com/union/doc/zksg0sb9z)
+  Future<FileDetailInfoList> fileInfos({required List<dynamic> fsids}) async {
+    final path = 'rest/2.0/xpan/multimedia';
+
+    var param = <String, dynamic>{'method': 'filemetas', 'dlink': "1", 'thumb': "1", 'extra': "1", 'needmedia': "1", 'detail': "1"};
+    final fsidsIndex = fsids.join(',');
+    param['fsids'] = "[${fsidsIndex}]";
+
+    final map = await _get(path, params: param);
+    return FileDetailInfoList.fromJson(map);
   }
 }
 
